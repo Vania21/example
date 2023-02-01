@@ -1,0 +1,457 @@
+//animal.h
+
+#include <iostream>
+#include <fstream>
+#include <math.h>
+
+class Animal
+{
+protected:
+	int x;
+	int y;
+	int course;
+	int post;
+	int age;
+	int type;
+public:
+	Animal();
+	Animal(int x, int y, int c, int p, int a, int t);
+
+	virtual void read(std::ifstream& fin);
+	virtual void move(int n, int m);
+	virtual void eat();
+	virtual int getNas() const;
+	virtual void nullNas();
+	virtual void star();
+	int getAge() const;
+	int getType() const;
+	int getX() const;
+	int getY() const;
+	virtual Animal& pochk() const =0;
+};
+
+//animal.cpp
+
+Animal::Animal():x(0), y(0), course(0), post(0), age(0), type(0)
+{
+}
+
+Animal::Animal(int x, int y, int c, int p, int a, int t) :x(x), y(y), course(c), post(p), age(a), type(t)
+{
+}
+
+void Animal::read(std::ifstream& fin)
+{
+	fin >> this->x;
+	fin >> this->y;
+	fin >> this->course;
+	fin >> this->post;
+}
+
+void Animal::move(int n, int m)
+{
+}
+
+void Animal::eat()
+{
+}
+
+int Animal::getNas() const
+{
+	return 0;
+}
+
+void Animal::nullNas()
+{
+}
+
+void Animal::star()
+{
+}
+
+int Animal::getAge() const
+{
+	return this->age;
+}
+
+int Animal::getType() const
+{
+	return this->type;
+}
+
+int Animal::getX() const
+{
+	return this->x;
+}
+
+int Animal::getY() const
+{
+	return this->y;
+}
+
+//wolf.h
+
+class Wolf : public Animal
+{
+private:
+	int nas;
+public:
+	Wolf();
+
+	void read(std::ifstream& fin);
+	void move(int n, int m);
+	void eat();
+	void star();
+	int getNas() const;
+	void nullNas();
+	Animal &pochk()const;
+};
+//wolf.cpp
+
+Wolf::Wolf() : Animal(), nas(0)
+{
+}
+
+void Wolf::read(std::ifstream& fin)
+{
+	this->Animal::read(fin);
+	this->nas = 0;
+	this->type = 2;
+}
+
+void Wolf::move(int n, int m)
+{
+	switch (this->course)
+	{
+	case 3:
+		this->x -=2;
+		if (this->x < 0) this->x = (this->x + n) % n;
+		break;
+	case 2:
+		this->y += 2;
+		if (this->y >= m) this->y = (this->y % m);
+		break;
+	case 1:
+		this->x += 2;
+		if (this->x >= n) this->x = (this->x % n);
+		break;
+	case 0:	
+		this->y -= 2;
+		if (this->y < 0) this->y = (this->y + m) % m;
+		break;
+	}
+	if (((this->age + 1) % this->post) == 0) this->course = (this->course + 1) % 4;
+}
+
+void Wolf::eat()
+{
+	this->nas += 1;
+}
+
+void Wolf::star()
+{
+	this->age++;
+}
+
+int Wolf::getNas() const
+{
+	return this->nas;
+}
+
+void Wolf::nullNas()
+{
+	this->nas = 0;
+}
+
+Animal& Wolf::pochk() const
+{
+	Wolf* fresh = new Wolf;
+	fresh->x = this->x;
+	fresh->y = this->y;
+	fresh->course = this->course;
+	fresh->post = this->post;
+	fresh->age = 0;
+	fresh->type = 2;
+	fresh->nas = 0;
+
+	return *fresh;
+}
+
+
+//rabbit.h
+
+class Rabbit : public Animal
+{
+
+public:
+	Rabbit();
+
+	void read(std::ifstream& fin);
+	void move(int n, int m);
+	void star();
+	Animal& pochk()const;
+};
+
+//rabbit.cpp
+
+Rabbit::Rabbit() : Animal()
+{
+}
+
+void Rabbit::read(std::ifstream& fin)
+{
+	this->type = 1;
+	this->Animal::read(fin);
+}
+
+void Rabbit::move(int n, int m)
+{
+switch (this->course)
+	{
+	case 3:
+		this->x -= 1;
+		if (this->x < 0) this->x = (this->x + n) %n;
+		break;
+	case 2:
+		this->y += 1;
+		if (this->y >= m) this->y = (this->y % m);
+		break;
+	case 1:
+		this->x += 1;
+		if (this->x >= n) this->x = (this->x % n);
+		break;
+	case 0:
+		this->y -= 1;
+		if (this->y < 0) this->y = (this->y + m) % m;
+		break;
+	}
+	if (((this->age + 1) % this->post) == 0) this->course = (this->course + 1) % 4;
+	}
+
+void Rabbit::star()
+{
+	this->age++;
+}
+
+Animal& Rabbit::pochk() const
+{
+	Rabbit* fresh = new Rabbit;
+	fresh->x = this->x;
+	fresh->y = this->y;
+	fresh->course = this->course;
+	fresh->post = this->post;
+	fresh->age = 0;
+	fresh->type = 1;
+
+	return *fresh;
+}
+
+//simulation.h
+
+class Simulation
+{
+private:
+	int n;
+	int m;
+	Animal** list;
+	int size;
+public:
+	Simulation(int n, int m);
+	~Simulation();
+
+	void move();
+	void eat();
+	void pochk();
+	void dying();
+	void star();
+
+	void addWolf(std::ifstream& fin);
+	void addRabbit( std::ifstream& fin);
+	void addAnimal(Animal& beast);
+	void dell( int i);
+
+	void print(std::ofstream& fout)const;
+};
+
+
+//simulation.cpp
+
+Simulation::Simulation(int n, int m): n(n), m(m), list(new Animal*[0]), size(0)
+{
+}
+
+Simulation::~Simulation()
+{
+	for (int i = 0; i < this->size; i++) delete[]this->list[i];
+	delete[]this->list;
+}
+
+void Simulation::move()
+{
+	for (int i = 0; i < this->size; i++) 
+		(this->list[i])->move(this->n,this->m);
+}
+
+void Simulation::addWolf (std::ifstream& fin)
+{
+	Animal** buffer = new Animal * [this->size + 1];
+	for (int i = 0; i <this->size; i++) buffer[i] = this->list[i];
+	delete []this->list;
+
+	Wolf *fresh= new Wolf;
+	fresh->read(fin);
+	buffer[this->size] = fresh;
+	this->list = buffer;
+	this->size++;
+}
+
+void Simulation::addRabbit(std::ifstream& fin)
+{
+	Animal** buffer = new Animal * [this->size + 1];
+	for (int i = 0; i < this->size; i++) buffer[i] = this->list[i];
+	delete[]this->list;
+
+	Rabbit *fresh = new Rabbit;
+	fresh->read(fin);
+	buffer[this->size] = fresh;
+	this->list = buffer;
+	this->size++;
+}
+
+void Simulation::eat()
+{
+	for (int i = 0; i < this->size; i++)
+	{
+		if ((this->list[i])->getType() == 2)
+		{
+			for (int j = 0; j < this->size; j++)
+			{
+				if ((this->list[j])->getType() == 1 &&
+					(this->list[i])->getX() == (this->list[j])->getX() && 
+					(this->list[i])->getY() == (this->list[j])->getY()  )
+				{
+					(this->list[i])->eat();
+					dell(j);
+				}
+			}
+		}
+	}
+}
+
+void Simulation::dell(int i)
+{
+	Animal** buffer = new Animal * [this->size - 1];
+	for (int j = 0; j < this->size -1; j++)
+	{
+		if (j<i) buffer[j] = this->list[j];
+		if (j >= i) buffer[j] = this->list[j + 1];
+	}
+	delete[]this->list[i];
+	delete[]this->list;
+	this->list = buffer;
+	this->size--;
+}
+
+void Simulation::pochk()
+{
+	for (int i = 0; i < this->size; i++)
+	{
+		if ((this->list[i])->getType() == 2 && (this->list[i])->getNas() >= 2) 
+		{
+			(this->list[i])->nullNas();
+			addAnimal((this->list[i])->pochk());
+		}
+		if ((this->list[i])->getType() == 1 && ((this->list[i])->getAge() == 5 || (this->list[i])->getAge() == 10))
+			addAnimal((this->list[i])->pochk());
+	}
+}
+
+void Simulation::addAnimal(Animal & beast)
+{
+	Animal** buffer = new Animal * [this->size + 1];
+	for (int i = 0; i < this->size; i++) buffer[i] = this->list[i];
+	delete[] this->list;
+	buffer[this->size] = &beast;
+	this->list = buffer;
+	this->size++;
+}
+
+void Simulation::dying()
+{
+	for (int i = 0; i < this->size; i++)
+	{
+		if ((this->list[i])->getType() == 1 && (this->list[i])->getAge() >= 10) dell(i);
+		if ((this->list[i])->getType() == 2 && (this->list[i])->getAge() >= 15) dell(i);
+	}
+}
+
+void Simulation::star()
+{
+	for (int i = 0; i < this->size; i++)
+		(this->list[i])->star();
+}
+
+void Simulation::print(std::ofstream& fout) const
+{
+	int** buffer = new int* [this->n];
+	for (int i = 0; i < this->n; i++)
+		buffer[i] = new int[this->m] {};
+	
+	for (int i = 0; i < this->size; i++)
+	{
+		if ((this->list[i])->getType() == 1) buffer[(this->list[i])->getY()][(this->list[i])->getX()]++;
+		if ((this->list[i])->getType() == 2) buffer[(this->list[i])->getY()][(this->list[i])->getX()]--;
+	}
+
+	for (int i = 0; i < this->n; i++)
+	{
+		for (int j = 0; j < this->m; j++)
+		{
+			if (buffer[i][j] == 0) fout << "#";
+			else fout << buffer[i][j];
+		}
+		fout << "\n";
+	}
+	for (int i = 0; i < this->n; i++) delete[]buffer[i];
+	delete[]buffer;
+}
+
+
+
+//main.cpp
+
+int main()
+{
+    std::ifstream fin("input.txt");
+    std::ofstream fout("output.txt");
+    int n;
+    int m;
+    int t;
+    int countR;
+    int countW;
+    fin >> n >> m >> t;
+    fin >> countR >> countW;
+
+    Simulation play(n, m);
+    for (int i = 0; i < countR; i++) 
+        play.addRabbit(fin);
+    for (int i = 0; i < countW; i++)
+        play.addWolf(fin);
+    
+
+
+   for (int i = 0; i < t; i++)
+    {
+        play.move();
+        play.eat();
+        play.star();
+        play.pochk();
+        play.dying();  
+
+    }
+   play.dying();    
+   play.print(fout);
+
+    fout.close();
+    fin.close();
+}

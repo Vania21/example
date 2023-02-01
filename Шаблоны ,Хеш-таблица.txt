@@ -1,0 +1,933 @@
+#include <fstream>
+#include <iostream>
+
+//Matrix.h
+
+/*class Matrix
+{
+	friend struct std::hash<Matrix>;
+private:
+	int n;
+	int m;
+	int** mass;
+public:
+	Matrix();
+	Matrix(int n);
+	Matrix(int n, int* trace);
+	Matrix(Matrix const& other);
+	~Matrix();
+
+	Matrix const operator+(Matrix const& other) const;
+	Matrix const operator-(Matrix const& other) const;
+	Matrix const operator*(Matrix const& other) const;
+	Matrix const operator~()const;
+	Matrix& operator=(Matrix const& other);
+	bool operator==(Matrix const& other) const;
+	bool operator!=(Matrix const& other) const;
+	Matrix const operator()(int i, int j) const;
+	int* operator[](int i) const;
+	friend std::ifstream& operator>>(std::ifstream& fin, Matrix& m);
+	friend std::ofstream& operator<<(std::ofstream& fout, const Matrix& m);
+	void exten(int n);
+}; 
+
+
+template<>
+struct std::hash<Matrix>
+{
+	std::size_t operator()(Matrix const& m) const
+	{
+		std::size_t t = 0;
+		for (int i = 0; i < m.n; i++)
+			for (int j = 0; j < m.m; j++)
+				t += m.mass[i][j];
+		return t;
+	}
+};*/
+
+//Matrix.cpp
+
+/*Matrix::Matrix() : n(0), m(0), mass(nullptr)
+{
+}
+
+Matrix::Matrix(int n) : n(n), m(n), mass(new int* [n])
+{
+	for (int i = 0; i < n; i++)
+	{
+		this->mass[i] = new int[n];
+		for (int k = 0; k < n; k++)
+		{
+			if (i == k) mass[i][k] = 1;
+			else mass[i][k] = 0;
+		}
+	}
+}
+
+Matrix::Matrix(int n, int* trace) : n(n), m(n), mass(new int* [n])
+{
+	for (int i = 0; i < n; i++)
+	{
+		this->mass[i] = new int[n];
+		for (int k = 0; k < n; k++)
+		{
+			if (i == k) mass[i][k] = trace[i];
+			else mass[i][k] = 0;
+		}
+	}
+}
+
+Matrix const Matrix::operator+(Matrix const& other) const
+{
+	if ((this->n) != (other.n)) return *(new Matrix());
+	Matrix summ(this->n);
+	for (int i = 0; i < this->n; i++)
+		for (int k = 0; k < this->n; k++)
+			summ[i][k] = this->mass[i][k] + other.mass[i][k];
+	return  summ;
+	summ.~Matrix();
+}
+
+Matrix const Matrix::operator-(Matrix const& other) const
+{
+	if ((this->n) != (other.n)) return *(new Matrix());
+	Matrix summ(this->n);
+	for (int i = 0; i < this->n; i++)
+		for (int k = 0; k < this->n; k++)
+			summ[i][k] = this->mass[i][k] - other.mass[i][k];
+	return  summ;
+}
+
+Matrix const Matrix::operator*(Matrix const& other) const
+{
+	if ((this->m) != (other.n)) return *(new Matrix());
+	Matrix buffer(this->m);
+	for (int i = 0; i < this->m; i++)
+		buffer.mass[i][i] = 0;
+
+	for (int i = 0; i < this->n; i++)
+	{
+		for (int k = 0; k < this->n; k++)
+		{
+			for (int j = 0; j < this->n; j++)
+			{
+				buffer.mass[i][k] += this->mass[i][j] * other.mass[j][k];
+			}
+		}
+	}
+
+	return buffer;
+}
+
+Matrix const Matrix::operator~() const
+{
+	Matrix t(this->n);
+
+	for (int i = 0; i < this->n; i++)
+	{
+		for (int k = 0; k < n; k++)
+		{
+			t.mass[i][k] = this->mass[k][i];
+		}
+	}
+	return t;
+}
+
+Matrix& Matrix::operator=(Matrix const& other)
+{
+	for (int i = 0; i < this->n; i++)
+		for (int k = 0; k < this->n; k++)
+			this->mass[i][k] = other.mass[i][k];
+	return *this;
+}
+
+bool Matrix::operator==(Matrix const& other) const
+{
+	if (this->n != other.n) return false;
+	for (int i = 0; i < this->n; i++)
+	{
+		for (int j = 0; j < this->n; j++)
+		{
+			if (this->mass[i][j] != other.mass[i][j]) return false;
+		}
+	}
+	return true;
+}
+
+bool Matrix::operator!=(Matrix const& other) const
+{
+	return !(*this == other);
+}
+
+Matrix const Matrix::operator()(int i, int j) const
+{
+	Matrix min((this->n) - 1);
+	for (int k = 0; k < this->n - 1; k++)
+	{
+		for (int t = 0; t < this->n - 1; t++)
+		{
+			if (k < i && t < j) min.mass[k][t] = this->mass[k][t];
+			if (k >= i && t < j) min.mass[k][t] = this->mass[k + 1][t];
+			if (k < i && t >= j) min.mass[k][t] = this->mass[k][t + 1];
+			if (k >= i && t >= j) min.mass[k][t] = this->mass[k + 1][t + 1];
+		}
+	}
+	return min;
+}
+
+Matrix::~Matrix()
+{
+	for (int i = 0; i < this->n; i++) delete[]this->mass[i];
+	delete[]this->mass;
+}
+
+Matrix::Matrix(Matrix const& other) : n(other.n), m(other.m), mass(new int* [other.n])
+{
+	for (int i = 0; i < other.n; i++)
+	{
+		this->mass[i] = new int[other.m];
+		for (int k = 0; k < other.m; k++)	this->mass[i][k] = other.mass[i][k];
+	}
+}
+
+int* Matrix::operator[](int i) const
+{
+	if ((this->n) <= (i)) return nullptr;
+	return this->mass[i];
+}
+
+void Matrix::exten(int n)
+{
+	for (int i=0; i < this->n; i++) delete[]this->mass[i];
+	delete[]this->mass;
+	this->n = n;
+	this->m = n;
+	int** buffer = new int*[n];
+	for (int i = 0; i < n; i++) buffer[i] = new int[n];
+	this->mass = buffer;
+}
+
+std::ifstream& operator>>(std::ifstream& fin, Matrix& m)
+{
+	int n;
+	fin >> n;
+	m.exten(n);
+	for (int i = 0; i < m.n; i++)
+		for (int j = 0; j < m.m; j++)
+			fin >> m.mass[i][j];
+	return fin;
+}
+
+std::ofstream& operator<<(std::ofstream& fout, const Matrix& m)
+{
+	for (int i = 0; i < m.n; i++) {
+		for (int j = 0; j < m.m; j++)
+			fout << " " << m.mass[i][j] << ' ';
+		fout << "\n";
+	}
+	return fout;
+}*/
+
+//List.cpp
+
+template <typename K, typename V>
+class List {
+private:
+	K key;
+	V value;
+	List<K, V>* next;
+public:
+	List(K k, V v);
+	List(List<K, V> const& other);
+	~List();
+
+	void add(K k, V v);
+	void dell(K k);
+	List<K, V>* sled();
+	const K& getKey()const;
+	const V& getValue()const;
+	bool searchBool(K k) const;
+	const List<K, V>& search(const K& k) const;
+};
+
+template<typename K, typename V>
+List<K, V>::List(K k, V v) : key(k), value(v), next(nullptr)
+{
+}
+
+template<typename K, typename V>
+List<K, V>::List(List<K, V> const& other) : key(other.key), value(other.value)
+{
+	if (other.next != nullptr) 
+	this->next=new List<K, V>(*other.next);
+	else this->next=nullptr;
+}
+
+
+template<typename K, typename V>
+List<K, V>::~List()
+{
+	if (next != nullptr) delete next;
+}
+
+template<typename K, typename V>
+void List<K, V>::add(K k, V v)
+{
+	List<K, V>* ad = new List<K, V>(k, v);
+	List<K, V>* ptr = this;
+	while (ptr->next != nullptr) ptr = ptr->next;
+	ptr->next = ad;
+}
+
+template<typename K, typename V>
+void List<K, V>::dell(K k)
+{
+	List<K, V>* p = this;
+	while (p->next != nullptr && (p->next)->key != k) p = p->next;
+	List<K, V>* q = p->next;
+	p->next = q->next;
+	q->next = nullptr;
+	delete q;
+}
+
+template<typename K, typename V>
+List<K, V>* List<K, V>::sled()
+{
+	return this->next;
+}
+
+template<typename K, typename V>
+const K& List<K, V>::getKey() const
+{
+	return this->key;
+}
+
+template<typename K, typename V>
+const V& List<K, V>::getValue() const
+{
+	return this->value;
+}
+
+template<typename K, typename V>
+bool List<K, V>::searchBool(K k) const
+{
+	const List<K, V>* p = this;
+	if (p->key == k) return true;
+	while (p->next != nullptr)
+	{
+		if (p->key == k) return true;
+		p = p->next;
+	}
+	return false;
+}
+
+template<typename K, typename V>
+const List<K, V>& List<K, V>::search(const K& k) const
+{
+	const List<K, V>* p = this;
+	while (p != nullptr && p->key != k) p = p->next;
+	return *p;
+}
+
+//LinkedList.cpp
+
+template <typename K, typename V>
+class LinkedList {
+private:
+	List<K, V>* first;
+
+public:
+	LinkedList<K, V>();
+	LinkedList<K, V>(LinkedList<K, V> const& other);
+	~LinkedList<K, V>();
+
+	List<K, V>& getFirst() const;
+	void add(K k, V v);
+	void dell(K k);
+	bool searchBool(K k) const;
+	const List<K, V>& search(const K& k);
+	const V& getValueFirst()const;
+
+	class Iterator
+	{
+	private:
+		List<K, V>* obj;
+	public:
+		Iterator(List<K, V>* obj) : obj(obj) {};
+
+		const K& operator*() const
+		{
+			return obj->getKey();
+		}
+
+		Iterator operator++()
+		{
+			obj = obj->sled();
+			return *this;
+		}
+
+		Iterator operator++(int)
+		{
+			auto tmp = *this;
+			++* this;
+			return tmp;
+		}
+
+		bool operator== (const Iterator& b)
+		{
+			return this->obj == b.obj;
+		}
+
+		bool operator!= (const Iterator& b)
+		{
+			return this->obj != b.obj;
+		}
+
+
+	};
+
+	Iterator begin()
+	{
+		return Iterator(first);
+	}
+
+	Iterator end()
+	{
+		return Iterator(nullptr);
+	}
+};
+
+template<typename K, typename V>
+LinkedList<K, V>::LinkedList() : first(nullptr)
+{
+}
+
+template<typename K, typename V>
+LinkedList<K, V>::LinkedList(LinkedList<K, V> const& other): first(new List<K,V>(*other.first))
+{
+}
+
+template<typename K, typename V>
+LinkedList<K, V>::~LinkedList()
+{
+	if (first != nullptr) delete first;
+}
+
+template<typename K, typename V>
+List<K, V>& LinkedList<K, V>::getFirst() const
+{
+	return *this->first;
+}
+
+template<typename K, typename V>
+void LinkedList<K, V>::add(K k, V v)
+{
+	if (first == nullptr)
+	{
+		List<K, V>* ad = new List<K, V>(k, v);
+		first = ad;
+
+	}
+	else this->first->add(k, v);
+}
+
+template<typename K, typename V>
+void LinkedList<K, V>::dell(K k)
+{
+	if (first->sled() == nullptr && first->getKey() == k) first = nullptr;
+	else first->dell(k);
+}
+
+template<typename K, typename V>
+bool LinkedList<K, V>::searchBool(K k) const
+{
+	if (this->first == nullptr) return false;
+	return this->first->searchBool(k);
+}
+
+template<typename K, typename V>
+const List<K, V>& LinkedList<K, V>::search(const K& k)
+{
+	return this->first->search(k);
+}
+
+template<typename K, typename V>
+const V& LinkedList<K, V>::getValueFirst() const
+{
+	return this->first->getValue();
+}
+
+//HashMap.cpp
+
+
+template <typename K, typename V>
+class HashMap {
+private:
+	int count;
+	int size;
+	LinkedList<K, V>* table;
+public:
+	HashMap(int size);
+	~HashMap();
+
+	int getCount() const;
+	double getCoef()const;
+	const List<K, V>& get(K k) const;
+	void add(K k, V v);
+	void dell(K k);
+	int unic();
+	void exten();
+	void work(int n, std::ifstream& fin, std::ofstream& fout);
+
+	class Iterator {
+		LinkedList<K, V>* m_ptr;
+	public:
+		Iterator(LinkedList<K, V>* ptr) : m_ptr(ptr) {}
+
+		LinkedList<K, V>& operator*() const
+		{
+			return *m_ptr;
+		}
+
+		Iterator& operator++()
+		{
+			m_ptr++; return *this;
+		}
+
+		Iterator operator++(int) {
+			Iterator tmp = *this;
+			++(*this);
+			return tmp;
+		}
+
+		bool operator== (const Iterator& b)
+		{
+			return m_ptr == b.m_ptr;
+		};
+		bool operator!= (const Iterator& b)
+		{
+			return m_ptr != b.m_ptr;
+		};
+	};
+
+	Iterator begin()
+	{
+		return Iterator(&table[0]);
+	}
+	Iterator end()
+	{
+		return Iterator(&table[size]);
+	}
+};
+
+template<typename K, typename V>
+HashMap<K, V>::HashMap(int size) : count(0), size(size), table(new LinkedList<K, V>[size])
+{
+}
+
+template<typename K, typename V>
+HashMap<K, V>::~HashMap()
+{
+	delete[]table;
+}
+
+template<typename K, typename V>
+int HashMap<K, V>::getCount() const
+{
+	return this->count;
+}
+
+template<typename K, typename V>
+double HashMap<K, V>::getCoef() const
+{
+	return (double)(this->count) / (this->size);
+}
+
+template<typename K, typename V>
+const List<K, V>& HashMap<K, V>::get(K k) const
+{
+	return this->table[(std::hash<K>{}(k) % this->size)].search(k);
+}
+
+template<typename K, typename V>
+void HashMap<K, V>::add(K k, V v)
+{
+	if (this->getCoef() == 1) this->exten();
+	int h = std::hash<K>()(k) % this->size;
+	if (this->table[h].searchBool(k) != 1)
+	{
+		this->count++;
+		this->table[h].add(k, v);
+	}
+	else
+	{
+		this->table[h].dell(k);
+		this->table[h].add(k, v);
+	}
+}
+
+template<typename K, typename V>
+void HashMap<K, V>::dell(K k)
+{
+	int h = std::hash<K>()(k) % this->size;
+	if (this->table[h].searchBool(k))
+	{
+		this->table[h].dell(k);
+		this->count--;
+	}
+}
+
+template<typename K, typename V>
+int HashMap<K, V>::unic()
+{
+	HashMap<V, K> map(16);
+		for (auto& i : *this)
+		{
+		    for (auto& j : i)
+		    {
+		     map.add(this->get(j).getValue(), j);
+		    }
+		}
+		return map.getCount();
+}
+
+template<typename K, typename V>
+void HashMap<K, V>::exten()
+{
+	LinkedList<K, V>* buffer = new LinkedList<K, V>[this->size * 2];
+	for (auto& i : *this)
+		for (auto& j : i)
+			buffer[std::hash<K>()(j) % (this->size * 2)].add(j, this->get(j).getValue());
+
+	delete[]this->table;
+	this->table = buffer;
+	this->size *= 2;
+}
+
+template<typename K, typename V>
+void HashMap<K, V>::work(int n, std::ifstream& fin, std::ofstream& fout)
+{
+	for (int i = 0; i < n; i++)
+	{
+		char com;
+		K k;
+		V v;
+		fin >> com;
+		if (com == 'A')
+		{
+			fin >> k >> v;
+			this->add(k, v);
+
+		}
+		if (com == 'R')
+		{
+			fin >> k;
+			this->dell(k);
+		}
+	}
+	fout << this->count << " ";
+	fout << this->unic();
+}
+
+//MultiHashMan.cpp
+/*
+template <typename K, typename V>
+class MultiHashMap {
+private:
+	int count;
+	int size;
+	LinkedList<K, V>* table;
+public:
+	MultiHashMap(int size);
+	~MultiHashMap();
+
+	int getCount() const;
+	double getCoef()const;
+	const List<K, V>& get(K k) const;
+	LinkedList<K, V>& getList(K k) const;
+	int numberWithKey(K k)const;
+	void add(K k, V v);
+	void dell(K k);
+	int unic();
+	void exten();
+	void work(int n, std::ifstream& fin, std::ofstream& fout);
+
+	class Iterator {
+		LinkedList<K, V>* m_ptr;
+	public:
+		Iterator(LinkedList<K, V>* ptr) : m_ptr(ptr) {}
+
+		LinkedList<K, V>& operator*() const
+		{
+			return *m_ptr;
+		}
+
+		Iterator& operator++()
+		{
+			m_ptr++; return *this;
+		}
+
+		Iterator operator++(int) {
+			Iterator tmp = *this;
+			++(*this);
+			return tmp;
+		}
+
+		bool operator== (const Iterator& b)
+		{
+			return m_ptr == b.m_ptr;
+		};
+		bool operator!= (const Iterator& b)
+		{
+			return m_ptr != b.m_ptr;
+		};
+	};
+
+	Iterator begin()
+	{
+		return Iterator(&table[0]);
+	}
+	Iterator end()
+	{
+		return Iterator(&table[size]);
+	}
+};
+
+template<typename K, typename V>
+MultiHashMap<K, V>::MultiHashMap(int size) : count(0), size(size), table(new LinkedList<K, V>[size])
+{
+}
+
+template<typename K, typename V>
+MultiHashMap<K, V>::~MultiHashMap()
+{
+	delete[]table;
+}
+
+template<typename K, typename V>
+int MultiHashMap<K, V>::getCount() const
+{
+	return this->count;
+}
+
+template<typename K, typename V>
+double MultiHashMap<K, V>::getCoef() const
+{
+	return (double)(this->count) / (this->size);
+}
+
+template<typename K, typename V>
+LinkedList<K, V>& MultiHashMap<K, V>::getList(K k) const
+{
+	LinkedList<K, V> *list= new LinkedList<K,V>;
+	int h = std::hash<K>()(k) % this->size;
+	for (auto& j : this->table[h])
+		if (j == k) list->add(j, this->table[h].getValueFirst());
+	return *list;
+}
+
+template<typename K, typename V>
+int MultiHashMap<K, V>::numberWithKey(K k) const
+{
+	LinkedList<K, V> p = this->getList(k);
+	int numb=0;
+	for (auto& j : p )
+	{
+		numb ++;
+	}
+	return numb;
+}
+
+template<typename K, typename V>
+const List<K, V>& MultiHashMap<K, V>::get(K k) const
+{
+	return this->table[(std::hash<K>{}(k) % this->size)].search(k);
+}
+
+template<typename K, typename V>
+void MultiHashMap<K, V>::add(K k, V v)
+{
+	if (this->getCoef() == 1) this->exten();
+	int h = std::hash<K>()(k) % this->size;
+	this->count++;
+	this->table[h].add(k, v);
+}
+
+template<typename K, typename V>
+void MultiHashMap<K, V>::dell(K k)
+{
+	int h = std::hash<K>()(k) % this->size;
+	while (this->table[h].searchBool(k))
+	{
+		this->table[h].dell(k);
+		this->count--;
+	}
+}
+
+template<typename K, typename V>
+int MultiHashMap<K, V>::unic()
+{
+	MultiHashMap<V, K> map(16);
+	for (auto& i : *this)
+	{
+		for (auto& j : i)
+		{
+			map.add(i.getValueFirst(), j);
+		}
+	}
+	return map.getCount();
+}
+
+template<typename K, typename V>
+void MultiHashMap<K, V>::exten()
+{
+	LinkedList<K, V>* buffer = new LinkedList<K, V>[this->size * 2];
+	for (auto& i : *this)
+		for (auto& j : i)
+			buffer[std::hash<K>()(j) % (this->size * 2)].add(j, i.getValueFirst());
+
+	delete[]this->table;
+	this->table = buffer;
+	this->size *= 2;
+}
+
+template<typename K, typename V>
+void MultiHashMap<K, V>::work(int n, std::ifstream& fin, std::ofstream& fout)
+{
+	for (int i = 0; i < n; i++)
+	{
+		char com;
+		K k;
+		V v;
+		fin >> com;
+		if (com == 'A')
+		{
+			fin >> k >> v;
+			this->add(k, v);
+
+		}
+		if (com == 'R')
+		{
+			fin >> k;
+			this->dell(k);
+		}
+	}
+	fout << this->count << " ";
+	fout << this->unic();
+}
+*/
+//main.cpp
+
+int main()
+{
+    std::ifstream fin("input.txt");
+    std::ofstream fout("output.txt");
+    char type1, type2;
+    int n;
+    fin >> type1 >> type2;
+    fin >> n;
+
+    if (type1 == 'I' && type2 == 'I')
+    {
+        HashMap<int, int> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'I' && type2 == 'D') {
+        HashMap<int, double> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'D' && type2 == 'I') {
+        HashMap<double, int> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'I' && type2 == 'S') {
+        HashMap<int, std::string> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'S' && type2 == 'I')
+    {
+        HashMap<std::string, int> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'D' && type2 == 'D')
+    {
+        HashMap<double, double> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'D' && type2 == 'S')
+    {
+        HashMap<double, std::string> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'S' && type2 == 'D')
+    {
+        HashMap<std::string, double> map(16);
+        map.work(n, fin, fout);
+    }
+    if (type1 == 'S' && type2 == 'S')
+    {
+        HashMap<std::string, std::string> map(16);
+        map.work(n, fin, fout);
+    }
+    //if (type1 == 'M' && type2 == 'I')
+    //{
+    //    HashMap<Matrix, int> map(16);
+    //    map.work(n, fin, fout);
+    //}
+    //if (type1 == 'M' && type2 == 'D')
+    //{
+    //    HashMap<Matrix, double> map(16);
+    //    map.work(n, fin, fout);
+    //}
+    //if (type1 == 'M' && type2 == 'S')
+    //{
+    //    HashMap<Matrix, std::string> map(16);
+    //    map.work(n, fin, fout);
+    //}
+
+    /* LinkedList<int, int> a;
+     a.add(1, 3);
+     a.add(2, 5);
+     a.add(3, 6);
+
+     for (const auto& elem : a) {
+         fout << elem <<
+         a.search(elem).getValue();
+     }*/
+
+     //HashMap<int, int> map(16);
+     //map.add(1, 1);
+     //map.add(17, 2);
+     //for (auto &i: map)
+     //{
+     //    for (auto &j : i)
+     //    {
+     //        fout << j ;
+     //    }
+     //}
+
+ /*   fout << "\n";
+    MultiHashMap<int, int> mmap(2);
+    mmap.add(1, 2);
+    mmap.add(1, 3);
+    mmap.add(2, 4);
+    mmap.add(3, 4);*/
+    //mmap.dell(1);
+    //fout << mmap.get(2).getValue();
+    /* for (auto& j : mmap.getList(1))
+        fout << j << " " << mmap.getList(1).getValueFirst() << " ";
+    fout << "\n";
+    fout << mmap.numberWithKey(1);
+    fout << "\n";
+    for (auto &i: mmap)
+    {   
+        for (auto &j : i)
+        {
+          fout << j << " " << i.getValueFirst() << " ";
+        }
+    }
+   */
+
+    fout.close();
+    fin.close();
+}

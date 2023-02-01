@@ -1,0 +1,303 @@
+#include <iostream>
+#include <fstream>
+
+class Cell
+{
+private:
+	int* a;
+public:
+	Cell();
+
+	void operator=(int* b);
+	void operator=(int b);
+};
+
+Cell::Cell() : a(nullptr)
+{
+}
+
+void Cell::operator=(int* b)
+{
+	a = b;
+}
+
+void Cell::operator=(int b)
+{
+	*a = b;
+}
+
+class Stolb
+{
+private:
+	Cell* a;
+public:
+	Stolb();
+	Stolb(int n, Cell *mass);
+
+	Cell operator[](int i);
+};
+
+Stolb::Stolb() : a(nullptr)
+{
+}
+
+Stolb::Stolb(int n, Cell* mass): a(new Cell[n])
+{
+	for (int i = 0; i < n; ++i)
+		this->a[i] = mass[i];
+}
+
+
+
+
+Cell Stolb::operator[](int i)
+{
+	return this->a[i];
+}
+
+class Matrix
+{
+private:
+	int n;
+	int m;
+	int** mass;
+public:
+	Matrix();
+	Matrix(int n);
+	Matrix(int n, int* trace);
+	Matrix(Matrix const& other);
+	~Matrix();
+
+	Matrix const operator+(Matrix const & other) const;
+	Matrix const operator-(Matrix const & other) const;
+	Matrix const operator*(Matrix const & other) const;
+	Matrix const operator~()const;
+	Matrix & operator=(Matrix const & other);
+	bool operator==(Matrix const & other) const;
+	bool operator!=(Matrix const& other) const;
+	void print(std::ofstream& fout) const;
+	void read(std::ifstream& fin);
+	Matrix const operator()(int i, int j) const;
+	int* operator[](int i) const;
+	Stolb operator()(int i) const;
+};
+
+Matrix::Matrix(): n(0), m(0), mass(nullptr)
+{
+}
+
+Matrix::Matrix (int n): n(n), m(n), mass(new int* [n])
+{
+	for (int i = 0; i < n; i++)
+	{
+		this->mass[i] = new int[n];
+		for (int k = 0; k < n; k++)
+		{
+			if (i == k) mass[i][k] = 1;
+			else mass[i][k] = 0;
+		}
+	}
+}
+
+Matrix::Matrix(int n, int* trace): n(n),m(n), mass(new int* [n])
+{
+	for (int i = 0; i < n; i++)
+	{
+		this->mass[i] = new int[n];
+		for (int k = 0; k < n; k++)
+		{
+			if (i == k) mass[i][k] = trace[i];
+			else mass[i][k] = 0;
+		}
+	}
+}
+
+Matrix const Matrix::operator+(Matrix const &other) const
+{
+	if ((this->n) != (other.n)) return *(new Matrix());
+	Matrix summ(this->n);
+	for (int i = 0; i < this->n; i++)
+		for (int k = 0; k < this->n; k++)
+			summ [i][k]=this->mass[i][k] + other.mass[i][k];
+	return  summ;
+	summ.~Matrix();
+}
+
+Matrix const Matrix::operator-(Matrix const &other) const
+{
+	if ((this->n) != (other.n)) return *(new Matrix());
+	Matrix summ(this->n);
+	for (int i = 0; i < this->n; i++)
+		for (int k = 0; k < this->n; k++)
+			summ[i][k] = this->mass[i][k] - other.mass[i][k];
+	return  summ;
+}
+
+Matrix const Matrix::operator*(Matrix const &other) const
+{
+	if ((this->m) != (other.n)) return *(new Matrix());
+	Matrix buffer(this->m);
+	for (int i = 0; i < this->m; i++)
+		buffer.mass[i][i] = 0;
+
+	for (int i = 0; i < this->n; i++) 
+	{
+		for (int k = 0; k < this->n; k++)
+		{
+			for (int j = 0; j < this->n; j++)
+			{
+				buffer.mass[i][k] += this->mass[i][j] * other.mass[j][k];
+			}
+		}
+	}
+	
+	return buffer;
+}
+
+Matrix const Matrix::operator~() const
+{
+	Matrix t(this->n);
+
+	for (int i = 0; i < this->n; i++)
+	{
+		for (int k = 0; k < n; k++)
+		{
+			t.mass[i][k] = this->mass[k][i];
+		}
+	}
+	return t;
+}
+
+Matrix& Matrix::operator=(Matrix const& other)
+{
+	for (int i = 0; i < this->n; i++)
+		for (int k = 0; k < this->n; k++)
+			this->mass[i][k] = other.mass[i][k];
+	return *this;
+}
+
+bool Matrix::operator==(Matrix const & other) const
+{
+	if (this->n != other.n) return false;
+		for (int i = 0; i < this->n; i++)
+		{
+			for (int j = 0; j < this->n; j++)
+			{
+				if (this->mass[i][j] != other.mass[i][j]) return false;
+			}
+		}
+	return true;
+}
+
+bool Matrix::operator!=(Matrix const& other) const
+{
+	return !(*this == other);
+}
+
+void Matrix::print(std::ofstream& fout) const
+{
+	for (int i = 0; i < (this->n); i++)
+	{
+		for (int j = 0; j < (this->m); j++)
+		{
+			fout << this->mass[i][j] << ' ';
+		}
+		  fout << "\n";
+	}
+}
+
+void Matrix::read(std::ifstream& fin)
+{
+	for (int i = 0; i < (this->n); i++)
+	{
+		for (int j = 0; j < (this->m); j++)
+		{
+			fin >> this->mass[i][j];
+		}
+	}
+}
+
+Matrix const Matrix::operator()(int i, int j) const
+{
+	Matrix min((this->n) - 1);
+	for (int k = 0; k < this->n -1; k++)
+	{
+		for (int t = 0; t < this->n -1; t++)
+		{
+			if (k < i && t < j) min.mass[k][t] = this->mass[k][t];
+			if (k >= i && t < j) min.mass[k][t] = this->mass[k+1][t];
+			if (k < i && t >= j) min.mass[k][t] = this->mass[k][t+1];
+			if (k >= i && t>=j) min.mass[k][t] = this->mass[k + 1][t+1];
+		}
+	}
+		return min;
+}
+
+Matrix::~Matrix()
+{
+	for (int i = 0; i < this->n; i++) delete[]this->mass[i];
+	delete []this->mass;
+}
+
+Matrix::Matrix(Matrix const&  other): n(other.n), m(other.m), mass(new int*[other.n])
+{
+	for (int i = 0; i < other.n; i++)
+	{
+		this->mass[i] = new int[other.m];
+		for (int k = 0; k < other.m; k++)	this->mass[i][k] = other.mass[i][k];
+	}
+}
+
+int* Matrix::operator[](int i) const
+{
+	if ((this->n) <= (i)) return nullptr;
+	return this->mass[i];
+}
+
+Stolb Matrix::operator()(int i) const
+{
+	if ((this->m) <= (i)) return Stolb();
+	Cell* buffer = new Cell[this->n];
+	for (int k = 0; k < this->n; k++) buffer[k] = &this->mass[k][i];
+	Stolb stolb(this->n,buffer);
+	delete []buffer;
+	return stolb;
+}
+
+int main()
+{
+	int n;
+	int k;
+	std::ifstream fin("input.txt");
+	fin >> n >> k;
+	
+	int* trace = new int[n];
+	for (int i = 0; i < n; i++) trace[i] = k;
+	Matrix K(n, trace);
+	delete []trace; 
+
+	Matrix A(n);
+	A.read(fin);
+
+	Matrix B(n);
+	B.read(fin);
+
+	Matrix C(n);
+	C.read(fin);
+
+	Matrix D(n);
+	D.read(fin);
+
+	std::ofstream fout("output.txt");
+
+	//A.print(fout);
+//	A(1)[1] = 2;
+//	A.print(fout);
+	
+	Matrix X = ((A + (B * (~C)) + K) * (~D));
+	X.print(fout);
+
+
+	fout.close();
+	fin.close();
+}

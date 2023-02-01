@@ -1,0 +1,213 @@
+#include <iostream>
+#include <fstream>
+#include <utility>
+#include <map>
+#include <queue>
+#include <set>
+
+//NKA.h
+
+class NKA
+{
+private:
+	int countState;
+	std::set<char> alfabet;
+	int q0;
+	std::set<int> finalState;
+	std::multimap<std::set<int>, std::pair<char, std::set<int> >> delta;
+public:
+	NKA();
+	NKA(NKA const& other);
+
+	void addFinalState(int s1);
+	void addDelta(std::set<int> from, std::set<int> to, char value);
+	void read(std::ifstream& fin);
+	NKA determinat() const;
+	std::string move(std::string expression) const;
+	void creatByExpression(std::string expression);
+};
+
+//NKA.cpp
+
+NKA::NKA(): countState(0), q0(-1)
+{
+}
+
+NKA::NKA(NKA const& other):countState(other.countState), q0(other.q0), alfabet(other.alfabet), finalState(other.finalState), delta(other.delta)
+{
+}
+
+void NKA::addFinalState(int s1)
+{
+	this->finalState.insert(s1);
+}
+
+void NKA::addDelta(std::set<int> from, std::set<int> to, char value)
+{
+	std::pair< char, std::set<int> > p;
+	p.first = value;
+	p.second = to;
+	this->delta.emplace(from, p);
+}
+
+void NKA::read(std::ifstream& fin)
+{
+	int f;
+	fin >> f;
+	this->countState = f;
+	fin >> f;
+	this->q0 = f;
+	fin >> f;
+	for (int i = 0; i < f; i++) {
+		int f1;
+		fin >> f1;
+		this->addFinalState(f1);
+	}
+	fin >> f;
+	for (int i = 0; i < f; i++) {
+		int from, to;
+		char value;
+		fin >> from >> to;
+		fin >> value;
+		this->alfabet.emplace(value);
+		std::set<int> q1, q2;
+		q1.emplace(from); q2.emplace(to);
+		addDelta(q1, q2, value);
+	}
+}
+
+NKA NKA::determinat() const
+{
+	NKA dka;
+	dka.q0 = this->q0;
+	dka.finalState = this->finalState;
+	dka.alfabet = this->alfabet;
+	std::queue<std::set<int>> P;
+	std::set<std::set<int>> outP;
+	std::set<int> tupic;
+	std::set<int> to;
+	std::set<int> from;
+	from.insert(this->q0);
+	P.push(from);
+	from.clear();
+	while (!P.empty())
+	{
+		from = P.front();
+		outP.insert(from);
+		P.pop();
+		for (auto c: this->alfabet)
+		{
+			to.clear();
+			for (auto o: from) {
+				std::set<int> prom; prom.insert(o);
+				auto range = this->delta.equal_range(prom);
+				for (auto& i = range.first; i != range.second; ++i)
+					if (i->second.first == c) {
+						for (auto& u : i->second.second)
+							to.insert(u);
+					}
+				prom.clear();
+			}
+				auto range = this->delta.equal_range(from);
+				for (auto& i = range.first; i != range.second; ++i)
+					if (i->second.first == c) {
+						for(auto& u : i->second.second)
+						to.insert(u);
+					}
+			if (to.size() != 0) {
+				dka.countState++; 
+				dka.addDelta(from, to, c);
+				if (outP.count(to) == 0) 
+					P.push(to);
+			}
+			else {
+				if (tupic.size() == 0) {
+					tupic.insert(-1);
+					dka.countState++;
+					for (auto q : this->alfabet)
+						dka.addDelta(tupic, tupic, q);
+				}
+				dka.addDelta(from, tupic, c);
+			}
+		}
+	}
+		return dka;
+}
+
+std::string NKA::move(std::string expression) const
+{
+	std::set<int> start;
+	std::set<int> to;
+	start.insert(q0);
+	for (auto& j : expression)
+	{
+
+		if (this->alfabet.count(j) == 0) return "NO";
+		auto range = this->delta.equal_range(start);
+		for (auto& i = range.first; i != range.second; ++i)
+			if (i->second.first == j)  to = i->second.second;
+		start = to;
+	}
+	for (auto& k : start)
+		if (this->finalState.count(k) != 0) return "YES";
+	return "NO";
+}
+
+void NKA::creatByExpression(std::string expression)
+{
+	if (expression.size() > 0) {
+		this->q0 = 0;
+		this->countState++;
+	}
+	for (auto& i : expression)
+	{
+		this->alfabet.emplace(i);
+		std::set<int> q1, q2;
+		q1.emplace(this->countState-1);
+		this->countState++;
+		q2.emplace(this->countState-1);
+		this->addDelta(q1,q2,i);
+		q1.clear(); q2.clear();
+	}
+	this->addFinalState(this->countState-1);
+}
+
+//main.cpp
+
+int main()
+{
+    std::ifstream fin("input.txt");
+    std::ofstream fout("output.txt");
+    NKA automatic;
+    automatic.read(fin);
+    NKA dka;
+    dka = automatic.determinat();
+    int T;
+    fin >> T;
+    for (int i = 0; i < T; i++)
+    {
+        std::string expression;
+        std::string answer;
+        fin >> expression;
+        answer = dka.move(expression);
+        fout << answer << "\n";
+    }
+    /*int T;
+    std::string exp;
+    fin >> exp;
+    NKA avt, dkaAvt;
+    avt.creatByExpression(exp);
+    dkaAvt = avt.determinat();
+    fin >> T;
+    for (int i = 0; i < T; i++)
+    {
+        std::string expression;
+        std::string answer;
+        fin >> expression;
+        answer = dkaAvt.move(expression);
+        fout << answer << "\n";
+    }*/
+
+    fout.close();
+    fin.close();
+}

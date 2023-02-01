@@ -1,0 +1,159 @@
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING 
+#include <iostream>
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <queue>
+#include <set>
+#include <vector>
+#include <regex>
+#include <fstream>
+#include <sstream>
+#include <experimental/filesystem>
+
+//WebCrawler.h
+
+class WebCrawler {
+private:
+	const std::string dir = "C:\\Users\\79080\\Desktop\\Proga\\5.1.1\\data\\";
+	int countThread;
+	std::string start;
+	std::vector<std::thread> threads;
+	std::queue<std::string> queue;
+	std::set<std::string> history;
+	std::set<std::string> links;
+	int miliseconds;
+	std::mutex lock;
+public:
+	WebCrawler(int countT, const std::string &start);
+	void addPage();
+	std::string getPage();
+	void crawl();
+	void readPage(const std::string &link);
+	int countReadPage()const;
+	int getTime()const;
+	bool emptyQueue();
+	void addLinks(const std::string& link);
+};
+
+//WebCrawler.cpp
+
+WebCrawler::WebCrawler(int countT, const std::string& start) : countThread(countT), start(start), miliseconds(0)
+{
+	queue.push(start);
+}
+
+void WebCrawler::addPage()
+{
+	for (auto& link : this->links)
+		if (this->history.count(link) == 0) {
+			this->queue.push(link);
+		}
+	this->links.clear();
+}
+
+std::string WebCrawler::getPage()
+{
+	std::lock_guard<std::mutex> lockQ(this->lockQ);
+	std::lock_guard<std::mutex> lockH(this->lockHistory);
+	std::string link;
+	link = this->queue.front();
+	this->queue.pop();
+	this->history.insert(link);
+	return link;
+}
+
+void WebCrawler::crawl()
+{
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	std::string link;
+	do {
+		for (int i = 0; i < countThread; i++)
+		{
+			if (this->emptyQueue()) {
+				link = this->getPage();
+				this->threads.push_back(std::thread(&WebCrawler::readPage, std::ref(*this), std::cref(link)));
+			}
+		}
+		for (auto& j : this->threads)
+			j.join();
+		this->threads.clear();
+		this->addPage();
+	} while (this->emptyQueue());
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	this->miliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	std::cout << queue.size();
+}
+
+void WebCrawler::readPage(const std::string& link)
+{
+	std::ifstream file(dir + link);
+	std::string line;
+	char c;
+	std::vector<std::string> hrefs;
+	while (file) {
+		line.clear();
+		c = file.get();
+		if (c == '<' && file.get() == 'a' && file.get() == ' ' && file.get() == 'h' &&
+			file.get() == 'r' && file.get() == 'e' && file.get() == 'f' && file.get() == '=') {
+			while (c != '\/')
+				c = file.get();
+			c = file.get();
+			c = file.get();
+			while (c != '\"') {
+				line += c;
+				c = file.get();
+			}
+			hrefs.push_back(line);
+		}
+	}
+	for (auto& i : hrefs)
+		this->addLinks(i);
+}
+
+int WebCrawler::countReadPage() const
+{
+	return this->history.size();
+}
+
+int WebCrawler::getTime() const
+{
+	return this->miliseconds;
+}
+
+bool WebCrawler::emptyQueue()
+{
+	std::lock_guard<std::mutex> lock(this->lockQ);
+	if (this->queue.empty() == 0) return true;
+	else return false;
+}
+
+void WebCrawler::addLinks(const std::string& link)
+{
+	std::lock_guard<std::mutex> lock(this->lockLink);
+	this->links.insert(link);
+}
+
+
+//main.cpp
+
+
+std::string download = "C:\\Users\\79080\\Desktop\\test_data\\";
+
+int main()
+{
+    std::ifstream fin("input.txt");
+    std::ofstream fout("output.txt");
+    std::experimental::filesystem::create_directories("C:\\Users\\79080\\Desktop\\Proga\\5.1.1\\data");
+    std::experimental::filesystem::copy("C:\\Users\\79080\\Desktop\\test_data\\" ,"C:\\Users\\79080\\Desktop\\Proga\\5.1.1\\data\\" );
+    std::string start;
+    int count;
+    fin >> start >> count;
+    WebCrawler craw(count, start);
+    craw.crawl();
+    fout << craw.countReadPage() << " " << craw.getTime();
+
+    fout.close();
+    fin.close();
+    std::experimental::filesystem::remove_all("C:\\Users\\79080\\Desktop\\Proga\\5.1.1\\data");
+}
